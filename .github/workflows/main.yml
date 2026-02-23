@@ -8,7 +8,7 @@ on:
 
 env:
   BUILD_CONFIGURATION: Release
-  DOTNET_SOLUTION_PATH: FastXe-UI/FastXeUI.csproj
+  DOTNET_SOLUTION_PATH: FastXeUI.csproj
   TRIVY_REPORT_DIR: ${{ github.workspace }}\TrivyReport
   DEPENDENCY_REPORT_DIR: ${{ github.workspace }}\DependencyCheck
 
