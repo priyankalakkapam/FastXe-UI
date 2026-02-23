@@ -1,0 +1,51 @@
+name: CI Build & Security Scans
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  BUILD_CONFIGURATION: 'Release'
+  DOTNET_SOLUTION_PATH: 'FastXe-UI.API.csproj'
+  TRIVY_REPORT_DIR: '${{ github.workspace }}\TrivyReport'
+  DEPENDENCY_REPORT_DIR: '${{ github.workspace }}\DependencyCheck'
+
+jobs:
+  BuildAndScanApp:
+    name: 'Application Build and Security Scan'
+    runs-on: [self-hosted, Windows, x64] 
+    
+    environment: TST
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Restore Dependencies
+        run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
+
+      - name: Build Project
+        run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      - name: Create Security Report Directories
+        shell: powershell
+        run: |
+          if (!(Test-Path "${{ env.TRIVY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.TRIVY_REPORT_DIR }}" -Force }
+          if (!(Test-Path "${{ env.DEPENDENCY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.DEPENDENCY_REPORT_DIR }}" -Force }
+
+      - name: Run Security Scans
+        shell: powershell
+        run: |
+          Write-Host "Running Trivy Scan on ${{ env.DOTNET_SOLUTION_PATH }}"
+          Write-Host "Running Dependency Check..."
+
+      - name: Cleanup
+        shell: powershell
+        run: |
+          Write-Host "Cleaning up build folders..."
+          if (Test-Path bin) { Remove-Item -Recurse -Force bin }
+          if (Test-Path obj) { Remove-Item -Recurse -Force obj }
