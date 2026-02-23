@@ -8,7 +8,7 @@ on:
 
 env:
   BUILD_CONFIGURATION: Release
-  DOTNET_SOLUTION_PATH: FastXe-UI.API/FastXe-UI.API.csproj
+  DOTNET_SOLUTION_PATH: FastXe-UI/FastXeUI.csproj
   TRIVY_REPORT_DIR: ${{ github.workspace }}\TrivyReport
   DEPENDENCY_REPORT_DIR: ${{ github.workspace }}\DependencyCheck
 
@@ -38,7 +38,7 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
 
-      - name: Build Project (Incremental)
+      - name: Build Project
         run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
       - name: Create Security Report Directories
@@ -50,10 +50,7 @@ jobs:
       - name: Run Security Scans
         shell: powershell
         run: |
-          Write-Host "Running Trivy Scan on $env:DOTNET_SOLUTION_PATH"
-          # Uncomment after installing Trivy on your Windows runner
+          Write-Host "Running Trivy Scan"
           # trivy fs --format json --output "$env:TRIVY_REPORT_DIR\trivy-report.json" .
-
-          Write-Host "Running Dependency Check..."
-          # Uncomment after installing Dependency-Check
+          Write-Host "Running Dependency Check"
           # dependency-check --project FastXe-UI --scan . --out "$env:DEPENDENCY_REPORT_DIR"
