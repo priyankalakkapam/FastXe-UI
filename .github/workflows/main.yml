@@ -14,8 +14,8 @@ env:
 
 jobs:
   BuildAndScanApp:
-    name: 'Application Build and Security Scan'
-    runs-on: [self-hosted, Windows, x64] 
+    name: Application Build and Security Scan
+    runs-on: [self-hosted, Windows, x64]
     
     environment: TST
 
@@ -26,26 +26,35 @@ jobs:
           ref: main
 
       - name: Restore Dependencies
-        run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
+        run: dotnet restore "${{ env.DOTNET_SOLUTION_PATH }}"
 
       - name: Build Project
-        run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        run: dotnet build "${{ env.DOTNET_SOLUTION_PATH }}" --configuration "${{ env.BUILD_CONFIGURATION }}" --no-restore
 
       - name: Create Security Report Directories
         shell: powershell
         run: |
-          if (!(Test-Path "${{ env.TRIVY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.TRIVY_REPORT_DIR }}" -Force }
-          if (!(Test-Path "${{ env.DEPENDENCY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.DEPENDENCY_REPORT_DIR }}" -Force }
+          if (!(Test-Path "${{ env.TRIVY_REPORT_DIR }}")) { 
+              New-Item -ItemType Directory -Path "${{ env.TRIVY_REPORT_DIR }}" -Force | Out-Null 
+          }
+          if (!(Test-Path "${{ env.DEPENDENCY_REPORT_DIR }}")) { 
+              New-Item -ItemType Directory -Path "${{ env.DEPENDENCY_REPORT_DIR }}" -Force | Out-Null 
+          }
 
       - name: Run Security Scans
         shell: powershell
         run: |
           Write-Host "Running Trivy Scan on ${{ env.DOTNET_SOLUTION_PATH }}"
-          Write-Host "Running Dependency Check..."
+          # Example: trivy filesystem scan
+          # trivy fs --format json --output "${{ env.TRIVY_REPORT_DIR }}\trivy-report.json" .
 
-      - name: Cleanup
+          Write-Host "Running Dependency Check..."
+          # Example: dependency-check CLI command
+          # dependency-check --project FastXe-UI --scan . --out "${{ env.DEPENDENCY_REPORT_DIR }}"
+
+      - name: Cleanup Build Folders
         shell: powershell
         run: |
           Write-Host "Cleaning up build folders..."
-          if (Test-Path bin) { Remove-Item -Recurse -Force bin }
-          if (Test-Path obj) { Remove-Item -Recurse -Force obj }
+          if (Test-Path "bin") { Remove-Item -Recurse -Force "bin" }
+          if (Test-Path "obj") { Remove-Item -Recurse -Force "obj" }
