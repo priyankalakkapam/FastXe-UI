@@ -8,14 +8,14 @@ on:
 
 env:
   BUILD_CONFIGURATION: Release
-  DOTNET_SOLUTION_PATH: FastXe-UI.API.csproj
+  DOTNET_SOLUTION_PATH: FastXe-UI.API/FastXe-UI.API.csproj
   TRIVY_REPORT_DIR: ${{ github.workspace }}\TrivyReport
   DEPENDENCY_REPORT_DIR: ${{ github.workspace }}\DependencyCheck
 
 jobs:
   BuildAndScanApp:
     name: Application Build and Security Scan
-    runs-on: [self-hosted, Windows, x64] # Remove "Runner" unless your runner has that label
+    runs-on: [self-hosted, Windows, x64]
     environment: TST
 
     steps:
@@ -51,7 +51,9 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Running Trivy Scan on $env:DOTNET_SOLUTION_PATH"
+          # Uncomment after installing Trivy on your Windows runner
           # trivy fs --format json --output "$env:TRIVY_REPORT_DIR\trivy-report.json" .
 
           Write-Host "Running Dependency Check..."
+          # Uncomment after installing Dependency-Check
           # dependency-check --project FastXe-UI --scan . --out "$env:DEPENDENCY_REPORT_DIR"
