@@ -7,24 +7,20 @@ on:
   workflow_dispatch:
 
 env:
-  BUILD_CONFIGURATION: 'Release'
-  # Ensure this path is relative to the root of your repo
-  DOTNET_SOLUTION_PATH: 'FastXe-UI.API.csproj' 
-  TRIVY_REPORT_DIR: '${{ github.workspace }}\TrivyReport'
-  DEPENDENCY_REPORT_DIR: '${{ github.workspace }}\DependencyCheck'
+  BUILD_CONFIGURATION: Release
+  DOTNET_SOLUTION_PATH: FastXe-UI.API.csproj
+  TRIVY_REPORT_DIR: ${{ github.workspace }}\TrivyReport
+  DEPENDENCY_REPORT_DIR: ${{ github.workspace }}\DependencyCheck
 
 jobs:
   BuildAndScanApp:
     name: Application Build and Security Scan
-    # Target your specific runner name here
-    runs-on: [self-hosted, Windows, x64, Runner]
+    runs-on: [self-hosted, Windows, x64] # Remove "Runner" unless your runner has that label
     environment: TST
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -34,30 +30,28 @@ jobs:
       - name: Cache NuGet Packages
         uses: actions/cache@v3
         with:
-          path: ~\ .nuget\packages
+          path: ${{ env.USERPROFILE }}\.nuget\packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
       - name: Restore Dependencies
-        run: dotnet restore "${{ env.DOTNET_SOLUTION_PATH }}"
+        run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
 
       - name: Build Project (Incremental)
-        run: dotnet build "${{ env.DOTNET_SOLUTION_PATH }}" --configuration "${{ env.BUILD_CONFIGURATION }}" --no-restore
+        run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
       - name: Create Security Report Directories
         shell: powershell
         run: |
-          if (!(Test-Path "${{ env.TRIVY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.TRIVY_REPORT_DIR }}" -Force }
-          if (!(Test-Path "${{ env.DEPENDENCY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.DEPENDENCY_REPORT_DIR }}" -Force }
+          if (-not (Test-Path $env:TRIVY_REPORT_DIR)) { New-Item -ItemType Directory -Path $env:TRIVY_REPORT_DIR -Force }
+          if (-not (Test-Path $env:DEPENDENCY_REPORT_DIR)) { New-Item -ItemType Directory -Path $env:DEPENDENCY_REPORT_DIR -Force }
 
       - name: Run Security Scans
         shell: powershell
         run: |
-          Write-Host "Running Trivy Scan on ${{ env.DOTNET_SOLUTION_PATH }}"
-          # Note: Trivy and Dependency-Check must be installed on your Windows machine 
-          # and added to the System PATH for these to run.
-          # trivy fs --format json --output "${{ env.TRIVY_REPORT_DIR }}\trivy-report.json" .
+          Write-Host "Running Trivy Scan on $env:DOTNET_SOLUTION_PATH"
+          # trivy fs --format json --output "$env:TRIVY_REPORT_DIR\trivy-report.json" .
 
           Write-Host "Running Dependency Check..."
-          # dependency-check --project FastXe-UI --scan . --out "${{ env.DEPENDENCY_REPORT_DIR }}"
+          # dependency-check --project FastXe-UI --scan . --out "$env:DEPENDENCY_REPORT_DIR"
