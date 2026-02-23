@@ -8,14 +8,16 @@ on:
 
 env:
   BUILD_CONFIGURATION: 'Release'
-  DOTNET_SOLUTION_PATH: 'FastXe-UI.API.csproj'
+  # Ensure this path is relative to the root of your repo
+  DOTNET_SOLUTION_PATH: 'FastXe-UI.API.csproj' 
   TRIVY_REPORT_DIR: '${{ github.workspace }}\TrivyReport'
   DEPENDENCY_REPORT_DIR: '${{ github.workspace }}\DependencyCheck'
 
 jobs:
   BuildAndScanApp:
     name: Application Build and Security Scan
-    runs-on: [self-hosted, Windows, x64]
+    # Target your specific runner name here
+    runs-on: [self-hosted, Windows, x64, Runner]
     environment: TST
 
     steps:
@@ -27,12 +29,12 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'  # Use your target .NET version
+          dotnet-version: '8.0.x'
 
       - name: Cache NuGet Packages
         uses: actions/cache@v3
         with:
-          path: ~/.nuget/packages
+          path: ~\ .nuget\packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
@@ -46,23 +48,16 @@ jobs:
       - name: Create Security Report Directories
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Path "${{ env.TRIVY_REPORT_DIR }}" -Force | Out-Null
-          New-Item -ItemType Directory -Path "${{ env.DEPENDENCY_REPORT_DIR }}" -Force | Out-Null
+          if (!(Test-Path "${{ env.TRIVY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.TRIVY_REPORT_DIR }}" -Force }
+          if (!(Test-Path "${{ env.DEPENDENCY_REPORT_DIR }}")) { New-Item -ItemType Directory -Path "${{ env.DEPENDENCY_REPORT_DIR }}" -Force }
 
       - name: Run Security Scans
         shell: powershell
         run: |
           Write-Host "Running Trivy Scan on ${{ env.DOTNET_SOLUTION_PATH }}"
-          # Uncomment to enable scan
+          # Note: Trivy and Dependency-Check must be installed on your Windows machine 
+          # and added to the System PATH for these to run.
           # trivy fs --format json --output "${{ env.TRIVY_REPORT_DIR }}\trivy-report.json" .
 
           Write-Host "Running Dependency Check..."
-          # Uncomment to enable scan
           # dependency-check --project FastXe-UI --scan . --out "${{ env.DEPENDENCY_REPORT_DIR }}"
-
-      # Optional: cleanup only if necessary
-      # - name: Cleanup Build Folders
-      #   shell: powershell
-      #   run: |
-      #     Write-Host "Cleaning up build folders..."
-      #     Remove-Item -Recurse -Force "bin","obj" -ErrorAction SilentlyContinue
