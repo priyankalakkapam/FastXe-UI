@@ -23,10 +23,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # ✅ FIXED DOTNET INSTALL LOCATION
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+          dotnet-install-dir: C:\actions-runner\dotnet
 
       - name: Cache NuGet Packages
         uses: actions/cache@v3
@@ -42,6 +44,9 @@ jobs:
       - name: Build Project
         run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
+      - name: Publish Project
+        run: dotnet publish ${{ env.DOTNET_SOLUTION_PATH }} -c ${{ env.BUILD_CONFIGURATION }} -o publish
+
       - name: Create Security Report Directories
         shell: powershell
         run: |
@@ -53,5 +58,6 @@ jobs:
         run: |
           Write-Host "Running Trivy Scan"
           # trivy fs --format json --output "$env:TRIVY_REPORT_DIR\trivy-report.json" .
+          
           Write-Host "Running Dependency Check"
           # dependency-check --project FastXe-UI --scan . --out "$env:DEPENDENCY_REPORT_DIR"
