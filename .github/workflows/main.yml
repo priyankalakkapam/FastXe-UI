@@ -15,10 +15,11 @@ env:
   DEPENDENCY_REPORT_DIR: ${{ github.workspace }}\DependencyCheck
 
 jobs:
-  BuildAndScanApp:
-    name: Application Build and Security Scan
-    runs-on: [self-hosted, Windows, x64]
-    environment: TST
+  build-and-deploy:
+    runs-on: [self-hosted, Windows, X64]
+
+    environment:
+      name: tst
 
     steps:
       - name: Checkout Code
