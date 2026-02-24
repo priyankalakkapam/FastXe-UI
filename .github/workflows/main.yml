@@ -15,7 +15,6 @@ env:
 jobs:
   build-and-deploy:
     runs-on: [self-hosted, Windows, X64]
-
     environment:
       name: tst
 
@@ -23,20 +22,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ✅ FIXED DOTNET INSTALL LOCATION
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-          dotnet-install-dir: C:\actions-runner\dotnet
-
-      - name: Cache NuGet Packages
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.USERPROFILE }}\.nuget\packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+      - name: Show .NET Version
+        run: dotnet --version
 
       - name: Restore Dependencies
         run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
