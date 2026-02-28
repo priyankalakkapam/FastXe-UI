@@ -1,50 +1,51 @@
-name: CI Build & Security Scans
+name: Docker Build & Push to ACR
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-env:
-  BUILD_CONFIGURATION: Release
-  DOTNET_SOLUTION_PATH: FastXeUI.csproj
-  TRIVY_REPORT_DIR: ${{ github.workspace }}\TrivyReport
-  DEPENDENCY_REPORT_DIR: ${{ github.workspace }}\DependencyCheck
+  workflow_dispatch:  # Manual trigger
 
 jobs:
-  build-and-deploy:
-    runs-on: [self-hosted, Windows, X64]
-    environment:
-      name: tst
+  build-and-scan:
+    name: Application Build and Security Scan
+    runs-on: self-hosted    # Your DESKTOP-BE1AC6Q runner
+    environment: TST        # Your TST environment
+
+    env:
+      DOCKER_IMAGE_NAME: uifastxe
 
     steps:
-      - name: Checkout Code
+      # === Checkout Code ===
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show .NET Version
-        run: dotnet --version
+      # === Login to ACR ===
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Restore Dependencies
-        run: dotnet restore ${{ env.DOTNET_SOLUTION_PATH }}
-
-      - name: Build Project
-        run: dotnet build ${{ env.DOTNET_SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
-
-      - name: Publish Project
-        run: dotnet publish ${{ env.DOTNET_SOLUTION_PATH }} -c ${{ env.BUILD_CONFIGURATION }} -o publish
-
-      - name: Create Security Report Directories
+      # === Build Docker Image ===
+      - name: Build Docker Image
         shell: powershell
         run: |
-          if (-not (Test-Path $env:TRIVY_REPORT_DIR)) { New-Item -ItemType Directory -Path $env:TRIVY_REPORT_DIR -Force }
-          if (-not (Test-Path $env:DEPENDENCY_REPORT_DIR)) { New-Item -ItemType Directory -Path $env:DEPENDENCY_REPORT_DIR -Force }
+          docker build `
+            -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.run_id }} `
+            -f Dockerfile `
+            .
 
-      - name: Run Security Scans
+      # === Push Docker Image ===
+      - name: Push Docker Image
         shell: powershell
         run: |
-          Write-Host "Running Trivy Scan"
-          # trivy fs --format json --output "$env:TRIVY_REPORT_DIR\trivy-report.json" .
-          
-          Write-Host "Running Dependency Check"
-          # dependency-check --project FastXe-UI --scan . --out "$env:DEPENDENCY_REPORT_DIR"
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.run_id }}
+
+      # === Cleanup Old Images ===
+      - name: Cleanup old Docker images
+        shell: powershell
+        run: |
+          $images = docker image ls -q | Select-Object -Skip 2
+          if ($images) {
+            docker image rm $images --force
+          }
+          docker buildx prune -a -f
